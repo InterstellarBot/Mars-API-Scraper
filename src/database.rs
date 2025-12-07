@@ -3,8 +3,6 @@ use mysql::{prelude::Queryable, Pool, PooledConn};
 use crate::ScraperConfig;
 
 pub struct Database {
-    connected: bool,
-    pool: Pool,
     connection: PooledConn
 }
 
@@ -14,15 +12,31 @@ impl Database {
         let pool: Pool = Pool::new(url.as_str())?;
         let connection: PooledConn = pool.get_conn()?;
 
-        Ok(Self {
-            connected: true,
-            pool, 
-            connection
-        })
+        Ok(Self {connection})
     }
 
     pub fn check_tables(&mut self) -> Result<(), mysql::Error> {
-        self.connection.query_drop(r"CREATE TABLE IF NOT EXISTS `test`(`test` varchar(255));")?;
+        self.connection.query_drop(r"CREATE TABLE IF NOT EXISTS `rovers`(
+            `id` VARCHAR(255) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255)
+        )")?;
+        self.connection.query_drop(r"CREATE TABLE IF NOT EXISTS `rover_cameras`(
+            `rover_id` VARCHAR(255) NOT NULL,
+            `instrument_name` VARCHAR(255) NOT NULL,
+            `name` VARCHAR(255),
+            PRIMARY KEY(`rover_id`, `instrument_name`)
+        );")?;
+        self.connection.query_drop(r"CREATE TABLE IF NOT EXISTS `rover_images`(
+            `nasa_id` VARCHAR(255) NOT NULL PRIMARY KEY,
+            `rover_id` VARCHAR(255) NOT NULL,
+            `camera_instrument_name` VARCHAR(255) NOT NULL,
+            `caption` VARCHAR(255),
+            `date` DATETIME NOT NULL,
+            `sol` INT UNSIGNED NOT NULL,
+            `title` VARCHAR(255) NOT NULL,
+            `credit` VARCHAR(255)
+        );")?;
+
         Ok(())
     }
 }
