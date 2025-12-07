@@ -1,6 +1,7 @@
 use std::{cmp::min, io::{self, Read}};
 
 use chrono::Utc;
+use log::{debug, trace};
 use reqwest::blocking::Client;
 use serde_json::{Map, Value};
 
@@ -19,6 +20,7 @@ impl Scraper for PerseveranceScraper {
             }
             Err(e) => return Err(e.to_string()),
         };
+        trace!("Found rover for Perseverance");
 
         // find the latest sol
         let mut sol_count_request = match client.get(format!("{RSS_BASE_URL}?feed=raw_images&category=mars2020&feedtype=json&latest=true")).send() {
@@ -28,11 +30,13 @@ impl Scraper for PerseveranceScraper {
         if !sol_count_request.status().is_success() {
             return Err(String::from("Sol count request failed."));
         }
+        trace!("Made request for SOL count");
         let mut sol_count_body: String = String::new();
         let sol_read_result: Result<usize, io::Error> = sol_count_request.read_to_string(&mut sol_count_body);
         if let Err(err) = sol_read_result {
             return Err(err.to_string())
         }
+        trace!("{sol_count_body}");
         // parsing
         let sol_body_parsed: Value = match serde_json::from_str(&sol_count_body) {
             Ok(r) => r,
@@ -42,18 +46,24 @@ impl Scraper for PerseveranceScraper {
             Some(r) => r,
             None => return Err(String::from("Can't find latest SOL")),
         };
+        debug!("Latest Remote Perserverance Sol: {latest_sol}");
 
         // get *our* last processed
         let last_processed: u64 = rover.last_sol_processed;
+        debug!("Latest Processed Perserverance Sol: {last_processed}");
         if last_processed >= latest_sol {
+            debug!("Latest processed is >= remote, nothing to do");
             return Ok(()); // nothin to do
         }
 
         let mut current_sol: u64 = last_processed;
         let end: u64 = min(last_processed + 10, latest_sol);
+        debug!("Processing from sol {current_sol} to sol {end}");
         while current_sol < end {
             current_sol += 1;
+
             // request all the images for the current sol
+            trace!("Running sol {current_sol}");
             let mut request = match client.get(format!("{RSS_BASE_URL}?feed=raw_images&category=mars2020&feedtype=json&sol={current_sol}")).send() {
                 Ok(r) => r,
                 Err(e) => return Err(e.to_string())
@@ -61,11 +71,13 @@ impl Scraper for PerseveranceScraper {
             if !request.status().is_success() {
                 return Err(String::from("Sol count request failed."));
             }
+            trace!("Made request successfully");
             let mut body: String = String::new();
             let read_result: Result<usize, io::Error> = request.read_to_string(&mut body);
             if let Err(err) = read_result {
                 return Err(err.to_string())
             }
+            trace!("{body}");
 
             // parse it
             let body_parsed: Value = match serde_json::from_str(&body) {
@@ -76,6 +88,7 @@ impl Scraper for PerseveranceScraper {
                 Some(r) => r,
                 None => continue
             };
+            trace!("Got {} images", images.len());
             for image_value in images {
                 let image_object: &Map<String, Value> = match image_value.as_object() {
                     Some(r) => r,
@@ -92,12 +105,16 @@ impl Scraper for PerseveranceScraper {
                     title: image_object["title"].to_string(),
                     credit: image_object["credit"].as_str().map(|credit| credit.to_string())
                 };
-                println!("{:?}", db.save_image(image))
+
+                let nasa_id: String = image.nasa_id.to_string();
+                let save_result: Result<(), mysql::Error> = db.save_image(image);
+                trace!("Image ID: {nasa_id} -> {save_result:?}");
             }
 
             if let Err(e) = db.update_sol_processed(&rover.id, current_sol) {
                 return Err(e.to_string());
             }
+            debug!("Completed SOL {current_sol}");
         }
 
         Ok(())

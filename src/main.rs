@@ -1,11 +1,13 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use chrono::{DateTime, Utc};
 use config::Config;
 use dotenv::dotenv;
+use log::{error, info};
 use mysql::Row;
 use reqwest::blocking::{Client, ClientBuilder};
 use serde::Deserialize;
+use simplelog::{ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode};
 
 use crate::{database::Database, scrapers::{perseverance::PerseveranceScraper, Scraper}};
 
@@ -18,7 +20,9 @@ struct ScraperConfig {
     db_pass: String,
     db_host: String,
     db_port: u32,
-    db_schema: String
+    db_schema: String,
+
+    log_level: Option<String>
 }
 
 // Rover ID constants, used as the db pk's
@@ -65,15 +69,33 @@ pub struct RoverImage {
 fn main() {
     // Load settings 
     dotenv().ok();
-    let settings: ScraperConfig = Config::builder()
+    let mut settings: ScraperConfig = Config::builder()
         .add_source(config::Environment::with_prefix("SCRAPER"))
         .build()
         .expect("Unable to build configuration")
         .try_deserialize::<ScraperConfig>()
         .expect("Unable to deserialize configuration");
+    if settings.log_level.is_none() {
+        settings.log_level = Some("information".to_string());
+    }
+    let filter: LevelFilter = match settings.log_level.clone().unwrap().to_lowercase().as_str() {
+        "error" => LevelFilter::Error,
+        "warn" => LevelFilter::Warn,
+        "info" => LevelFilter::Info,
+        "debug" => LevelFilter::Debug,
+        "trace" => LevelFilter::Trace,
+        _ => LevelFilter::Info
+    };
+
+    // Logging 
+    CombinedLogger::init(vec![
+        TermLogger::new(filter, simplelog::Config::default(), TerminalMode::Mixed, ColorChoice::Auto)
+    ]).expect("Failed to create logger.");
 
     // Connect to our DB
+    info!("Connecting to the database...");
     let mut db: Database = Database::new(&settings).expect("Failed to connect to database");
+    info!("Checking/seeding tables as needed");
     db.check_tables().expect("Failed to check database tables");
     db.seed_tables().expect("Failed to seed database tables");
 
@@ -85,7 +107,10 @@ fn main() {
         .expect("Failed to create HTTP Client");
 
     // Scraping time 
+    let perseverance_time: Instant = Instant::now();
+    info!("Running Perseverance Scraper...");
     if let Err(e) = PerseveranceScraper::scrape(&mut db, &request_client) {
-        println!("Perseverance Scraper failed to scrape: {e}");
+        error!("Perseverance Scraper failed to scrape: {e}");
     }
+    info!("Perseverance Scraper finished in {:?}", perseverance_time.elapsed())
 }
