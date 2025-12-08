@@ -12,6 +12,9 @@ The scraper is intended to run at a fixed interval. To prevent it hammering NASA
 
 For the sake's of NASA's underfunded servers, please don't disable this limit or make it too high. Let them breathe once in a while.
 
+## Where's Spirit and Opportunity?
+NASA took their images down a while ago, the original source no longer exists. If anyone has an idea on where to find them, please make an issue tyvm. :)
+
 ## Why rewrite the Ruby version?
 Because I don't like Ruby, and wanted something a little more lightweight to run. 
 
