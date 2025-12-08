@@ -1,9 +1,9 @@
 use reqwest::blocking::Client;
 
-use crate::database::Database;
+use crate::{database::Database, ScraperConfig};
 
 pub mod perseverance;
 
 pub trait Scraper {
-    fn scrape(db: &mut Database, client: &Client) -> Result<(), String>;
+    fn scrape(db: &mut Database, client: &Client, config: &ScraperConfig) -> Result<(), String>;
 }

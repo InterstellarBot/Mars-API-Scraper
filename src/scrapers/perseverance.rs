@@ -5,14 +5,14 @@ use log::{debug, trace};
 use reqwest::blocking::Client;
 use serde_json::{Map, Value};
 
-use crate::{database::Database, scrapers::Scraper, Rover, RoverImage, PERSEVERANCE_ID};
+use crate::{database::Database, scrapers::Scraper, Rover, RoverImage, ScraperConfig, PERSEVERANCE_ID};
 
 const RSS_BASE_URL: &str = "https://mars.nasa.gov/rss/api/";
 
 pub struct PerseveranceScraper;
 
 impl Scraper for PerseveranceScraper {
-    fn scrape(db: &mut Database, client: &Client) -> Result<(), String> {
+    fn scrape(db: &mut Database, client: &Client, config: &ScraperConfig) -> Result<(), String> {
         let rover: Rover = match db.get_rover(PERSEVERANCE_ID) {
             Ok(r) => match r {
                 Some(r) => r,
@@ -57,7 +57,7 @@ impl Scraper for PerseveranceScraper {
         }
 
         let mut current_sol: u64 = last_processed;
-        let end: u64 = min(last_processed + 10, latest_sol);
+        let end: u64 = min(last_processed + (config.max_sols.unwrap() as u64), latest_sol);
         debug!("Processing from sol {current_sol} to sol {end}");
         while current_sol < end {
             current_sol += 1;

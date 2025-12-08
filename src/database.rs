@@ -7,8 +7,8 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn new(settings: &ScraperConfig) -> Result<Self, mysql::Error> {
-        let url: String = format!("mysql://{}:{}@{}:{}/{}", settings.db_user, settings.db_pass, settings.db_host, settings.db_port, settings.db_schema);
+    pub fn new(config: &ScraperConfig) -> Result<Self, mysql::Error> {
+        let url: String = format!("mysql://{}:{}@{}:{}/{}", config.db_user, config.db_pass, config.db_host, config.db_port, config.db_schema);
         let pool: Pool = Pool::new(url.as_str())?;
         let connection: PooledConn = pool.get_conn()?;
 
