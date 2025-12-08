@@ -99,6 +99,7 @@ impl Scraper for PerseveranceScraper {
                     nasa_id: image_object["imageid"].to_string(),
                     rover_id: rover.id.to_string(),
                     instrument_name: image_object["camera"]["instrument"].to_string(),
+                    image_url: image_object["image_files"]["large"].to_string(),
                     caption: image_object["caption"].as_str().map(|caption| caption.to_string()),
                     date: Utc::now(), // TODO
                     sol: current_sol,

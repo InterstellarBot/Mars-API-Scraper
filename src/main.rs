@@ -61,6 +61,7 @@ pub struct RoverImage {
     nasa_id: String,
     rover_id: String,
     instrument_name: String,
+    image_url: String,
     caption: Option<String>,
     date: DateTime<Utc>,
     sol: u64,

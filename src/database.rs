@@ -31,6 +31,7 @@ impl Database {
             `nasa_id` VARCHAR(255) NOT NULL PRIMARY KEY,
             `rover_id` VARCHAR(255) NOT NULL,
             `camera_instrument_name` VARCHAR(255) NOT NULL,
+            `image_url` VARCHAR(1024) NOT NULL,
             `caption` VARCHAR(1024),
             `timestamp` INT UNSIGNED NOT NULL,
             `sol` INT UNSIGNED NOT NULL,
@@ -93,11 +94,12 @@ impl Database {
     }
 
     pub fn save_image(&mut self, rover_image: RoverImage) -> Result<(), mysql::Error> {
-        let statement: Statement = self.connection.prep("INSERT INTO `rover_images` VALUES(:nasa_id, :rover_id, :instrument_name, :caption, :date, :sol, :title, :credit)")?;
+        let statement: Statement = self.connection.prep("INSERT INTO `rover_images` VALUES(:nasa_id, :rover_id, :instrument_name, :image_url, :caption, :date, :sol, :title, :credit)")?;
         self.connection.exec_drop(&statement, params!{ 
             "nasa_id" => rover_image.nasa_id,
             "rover_id" => rover_image.rover_id,
             "instrument_name" => rover_image.instrument_name,
+            "image_url" => rover_image.image_url,
             "caption" => rover_image.caption,
             "date" => rover_image.date.timestamp(),
             "sol" => rover_image.sol,

@@ -99,6 +99,7 @@ impl Scraper for CuriosityScraper {
                     nasa_id: image_object["id"].to_string(),
                     rover_id: rover.id.to_string(),
                     instrument_name: image_object["instrument"].to_string(),
+                    image_url: image_object["url"].to_string(),
                     caption: image_object["description"].as_str().map(|caption| caption.to_string()),
                     date: Utc::now(), // TODO
                     sol: current_sol,
