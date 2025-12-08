@@ -1,6 +1,6 @@
-use std::{cmp::min, io::{self, Read}};
+use std::{cmp::min, io::{self, Read}, str::FromStr};
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use log::{debug, error, trace};
 use reqwest::blocking::Client;
 use serde_json::{Map, Value};
@@ -95,19 +95,37 @@ impl Scraper for CuriosityScraper {
                     None => continue
                 };
 
+                let nasa_id: String = image_object["id"].to_string();
+                let date_to_parse: String = match image_object["date_taken"].as_str() {
+                    Some(r) => r.to_string(),
+                    None => {
+                        error!("Failed to take date for {}", &nasa_id);
+                        error!("Skipping Image...");
+                        continue;
+                    },
+                };
+                // this stupid dumb function needs a timezone :/
+                let date: DateTime<Utc> = match DateTime::parse_from_str(&format!("{date_to_parse} +00:00"), "%Y-%m-%dT%H:%M:%S%.3fZ %z") {
+                    Ok(r) => r.to_utc(),
+                    Err(e) => {
+                        error!("Failed to parse date for {} ({date_to_parse}) -> {e}", &nasa_id);
+                        error!("Skipping Image...");
+                        continue;
+                    },
+                };
+
                 let image: RoverImage = RoverImage { 
-                    nasa_id: image_object["id"].to_string(),
+                    nasa_id: nasa_id.clone(),
                     rover_id: rover.id.to_string(),
                     instrument_name: image_object["instrument"].to_string(),
                     image_url: image_object["url"].to_string(),
                     caption: image_object["description"].as_str().map(|caption| caption.to_string()),
-                    date: Utc::now(), // TODO
+                    date,
                     sol: current_sol,
                     title: image_object["title"].to_string(),
                     credit: image_object["image_credit"].as_str().map(|credit| credit.to_string())
                 };
 
-                let nasa_id: String = image.nasa_id.to_string();
                 let save_result: Result<(), mysql::Error> = db.save_image(image);
                 trace!("Image ID: {nasa_id} -> {save_result:?}");
                 if let Err(e) = save_result {
