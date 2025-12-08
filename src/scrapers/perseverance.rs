@@ -1,7 +1,7 @@
 use std::{cmp::min, io::{self, Read}};
 
 use chrono::Utc;
-use log::{debug, trace};
+use log::{debug, error, trace};
 use reqwest::blocking::Client;
 use serde_json::{Map, Value};
 
@@ -110,6 +110,9 @@ impl Scraper for PerseveranceScraper {
                 let nasa_id: String = image.nasa_id.to_string();
                 let save_result: Result<(), mysql::Error> = db.save_image(image);
                 trace!("Image ID: {nasa_id} -> {save_result:?}");
+                if let Err(e) = save_result {
+                    error!("Failed to save image {nasa_id}: {e}");
+                }
             }
 
             if let Err(e) = db.update_sol_processed(&rover.id, current_sol) {
