@@ -43,6 +43,25 @@ impl Database {
 
     pub fn seed_tables(&mut self) -> Result<(), mysql::Error> {
         self.connection.query_drop(r"INSERT IGNORE INTO `rovers` VALUES('perseverance', 'Perseverance', 0)")?;
+        // Primarially taken from https://liquidgalaxylab.github.io/LG-Space-Visualizations/utils_constants/cameras.html
+        // Checked over (and placed in-order with) with https://github.com/corincerami/mars-photo-api?tab=readme-ov-file#perseverance-rover
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'EDL_RUCAM', 'Rover Up-Look Camera')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'EDL_RDCAM', 'Rover Down-Look Camera')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'EDL_DDCAM', 'Descent Stage Down-Look Camera')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'EDL_PUCAM1', 'Parachute Up-Look Camera A')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'EDL_PUCAM2', 'Parachute Up-Look Camera B')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'NAVCAM_LEFT', 'Navigation Camera - Left')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'NAVCAM_RIGHT', 'Navigation Camera - Right')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'MCZ_RIGHT', 'Mast Camera Zoom - Right')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'MCZ_LEFT', 'Mast Camera Zoom - Left')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'FRONT_HAZCAM_LEFT_A', 'Front Hazard Camera - Left')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'FRONT_HAZCAM_RIGHT_A', 'Front Hazard Camera - Right')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'REAR_HAZCAM_LEFT', 'Rear Hazard Camera - Left')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'REAR_HAZCAM_RIGHT', 'Rear Hazard Camera - Right')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'SKYCAM', 'MEDA Skycam')")?;
+        self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'SHERLOC_WATSON', 'Sherloc Watson Camera')")?;
+        // This is in the Liquid Galaxy Lab but not Chris's Camera list - Commented out for now
+        // self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'SUPERCAM_RMI', 'SuperCam Micro Imager')")?;
 
         Ok(())
     }
