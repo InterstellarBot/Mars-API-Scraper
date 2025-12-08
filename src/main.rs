@@ -9,7 +9,7 @@ use reqwest::blocking::{Client, ClientBuilder};
 use serde::Deserialize;
 use simplelog::{ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode};
 
-use crate::{database::Database, scrapers::{perseverance::PerseveranceScraper, Scraper}};
+use crate::{database::Database, scrapers::{curiosity::CuriosityScraper, perseverance::PerseveranceScraper, Scraper}};
 
 mod database;
 mod scrapers;
@@ -28,6 +28,7 @@ struct ScraperConfig {
 
 // Rover ID constants, used as the db pk's
 const PERSEVERANCE_ID: &str = "perseverance";
+const CURIOSITY_ID: &str = "curiosity";
 
 // Rover Struct
 #[derive(Debug)]
@@ -113,10 +114,18 @@ fn main() {
         .expect("Failed to create HTTP Client");
 
     // Scraping time 
+
+    let curiosity_time: Instant = Instant::now();
+    info!("Running Curiosity Scraper...");
+    if let Err(e) = CuriosityScraper::scrape(&mut db, &request_client, &config) {
+        error!("Curiosity Scraper failed to scrape: {e}");
+    }
+    info!("Curiosity Scraper finished in {:?}", curiosity_time.elapsed());
+
     let perseverance_time: Instant = Instant::now();
     info!("Running Perseverance Scraper...");
     if let Err(e) = PerseveranceScraper::scrape(&mut db, &request_client, &config) {
         error!("Perseverance Scraper failed to scrape: {e}");
     }
-    info!("Perseverance Scraper finished in {:?}", perseverance_time.elapsed())
+    info!("Perseverance Scraper finished in {:?}", perseverance_time.elapsed());
 }

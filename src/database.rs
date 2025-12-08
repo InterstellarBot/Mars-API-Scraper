@@ -1,6 +1,6 @@
 use mysql::{params, prelude::Queryable, Pool, PooledConn, Row, Statement};
 
-use crate::{Rover, RoverImage, ScraperConfig, PERSEVERANCE_ID};
+use crate::{Rover, RoverImage, ScraperConfig, CURIOSITY_ID, PERSEVERANCE_ID};
 
 pub struct Database {
     connection: PooledConn
@@ -62,6 +62,16 @@ impl Database {
         self.connection.query_drop(format!("INSERT IGNORE INTO `rover_cameras` VALUES('{PERSEVERANCE_ID}', 'SHERLOC_WATSON', 'Sherloc Watson Camera')"))?;
         // This is in the Liquid Galaxy Lab but not Chris's Camera list - Commented out for now
         // self.connection.query_drop(r"INSERT IGNORE INTO `rover_cameras` VALUES('perseverance', 'SUPERCAM_RMI', 'SuperCam Micro Imager')")?;
+
+        self.connection.query_drop(format!("INSERT IGNORE INTO `rovers` VALUES('{CURIOSITY_ID}', 'Curiosity', 0)"))?;
+        // https://github.com/corincerami/mars-photo-api?tab=readme-ov-file#other-rovers
+        self.connection.query_drop(format!("INSERT IGNORE INTO `rover_cameras` VALUES('{CURIOSITY_ID}', 'FHAZ', 'Front Hazard Avoidance Camera')"))?;
+        self.connection.query_drop(format!("INSERT IGNORE INTO `rover_cameras` VALUES('{CURIOSITY_ID}', 'RHAZ', 'Rear Hazard Avoidance Camera')"))?;
+        self.connection.query_drop(format!("INSERT IGNORE INTO `rover_cameras` VALUES('{CURIOSITY_ID}', 'MAST', 'Mast Camera')"))?;
+        self.connection.query_drop(format!("INSERT IGNORE INTO `rover_cameras` VALUES('{CURIOSITY_ID}', 'CHEMCAM', 'Chemistry and Camera Complex')"))?;
+        self.connection.query_drop(format!("INSERT IGNORE INTO `rover_cameras` VALUES('{CURIOSITY_ID}', 'MAHLI', 'Mars Hand Lens Imager')"))?;
+        self.connection.query_drop(format!("INSERT IGNORE INTO `rover_cameras` VALUES('{CURIOSITY_ID}', 'MARDI', 'Mars Descent Imager')"))?;
+        self.connection.query_drop(format!("INSERT IGNORE INTO `rover_cameras` VALUES('{CURIOSITY_ID}', 'NAVCAM', 'Navigation Camera')"))?;
 
         Ok(())
     }
