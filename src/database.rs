@@ -32,7 +32,7 @@ impl Database {
             `rover_id` VARCHAR(255) NOT NULL,
             `camera_instrument_name` VARCHAR(255) NOT NULL,
             `image_url` VARCHAR(1024) NOT NULL,
-            `caption` VARCHAR(1024),
+            `caption` VARCHAR(8196),
             `timestamp` INT UNSIGNED NOT NULL,
             `sol` INT UNSIGNED NOT NULL,
             `title` VARCHAR(1024) NOT NULL,
