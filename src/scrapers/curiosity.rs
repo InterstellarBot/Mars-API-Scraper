@@ -95,7 +95,14 @@ impl Scraper for CuriosityScraper {
                     None => continue
                 };
 
-                let nasa_id: String = image_object["id"].to_string();
+                let nasa_id: String = match image_object["id"].as_u64() {
+                    Some(r) => r.to_string(),
+                    None => {
+                        error!("Image is missing a NASA ID - Skipping!");
+                        continue;
+                    }
+                };
+
                 let date_to_parse: String = match image_object["date_taken"].as_str() {
                     Some(r) => r.to_string(),
                     None => {
@@ -114,15 +121,37 @@ impl Scraper for CuriosityScraper {
                     },
                 };
 
+                let instrument_name: String = match image_object["instrument"].as_str() {
+                    Some(r) => r.to_string(),
+                    None => {
+                        error!("Image {} is missing camera instrument name - Skipping!", &nasa_id);
+                        continue;
+                    },
+                };
+                let image_url: String = match image_object["url"].as_str() {
+                    Some(r) => r.to_string(),
+                    None => {
+                        error!("Image {} is missing image file url - Skipping!", &nasa_id);
+                        continue;
+                    },
+                };
+                let title: String = match image_object["title"].as_str() {
+                    Some(r) => r.to_string(),
+                    None => {
+                        error!("Image {} is missing a title - Skipping!", &nasa_id);
+                        continue;
+                    },
+                };
+
                 let image: RoverImage = RoverImage { 
                     nasa_id: nasa_id.clone(),
                     rover_id: rover.id.to_string(),
-                    instrument_name: image_object["instrument"].to_string(),
-                    image_url: image_object["url"].to_string(),
+                    instrument_name,
+                    image_url,
                     caption: image_object["description"].as_str().map(|caption| caption.to_string()),
                     date,
                     sol: current_sol,
-                    title: image_object["title"].to_string(),
+                    title,
                     credit: image_object["image_credit"].as_str().map(|credit| credit.to_string())
                 };
 

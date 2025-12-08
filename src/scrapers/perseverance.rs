@@ -95,7 +95,14 @@ impl Scraper for PerseveranceScraper {
                     None => continue
                 };
 
-                let nasa_id: String = image_object["imageid"].to_string();
+                let nasa_id: String = match image_object["imageid"].as_str() {
+                    Some(r) => r.to_string(),
+                    None => {
+                        error!("Image is missing a NASA ID - Skipping!");
+                        continue;
+                    }
+                };
+
                 let date_to_parse: String = match image_object["date_taken_utc"].as_str() {
                     Some(r) => r.to_string(),
                     None => {
@@ -114,15 +121,43 @@ impl Scraper for PerseveranceScraper {
                     },
                 };
 
+                let instrument_name: String = match image_object["camera"]["instrument"].as_str() {
+                    Some(r) => r.to_string(),
+                    None => {
+                        error!("Image {} is missing camera instrument name - Skipping!", &nasa_id);
+                        continue;
+                    },
+                };
+                let image_url: String = match image_object["image_files"]["large"].as_str() {
+                    Some(r) => r.to_string(),
+                    None => match image_object["image_files"]["medium"].as_str() {
+                        Some(r) => r.to_string(),
+                        None => match image_object["image_files"]["small"].as_str() {
+                            Some(r) => r.to_string(),
+                            None => {
+                                error!("Image {} is missing image file url - Skipping!", &nasa_id);
+                                continue;
+                            },
+                        }
+                    }
+                };
+                let title: String = match image_object["title"].as_str() {
+                    Some(r) => r.to_string(),
+                    None => {
+                        error!("Image {} is missing a title - Skipping!", &nasa_id);
+                        continue;
+                    },
+                };
+
                 let image: RoverImage = RoverImage { 
                     nasa_id: nasa_id.clone(),
                     rover_id: rover.id.to_string(),
-                    instrument_name: image_object["camera"]["instrument"].to_string(),
-                    image_url: image_object["image_files"]["large"].to_string(),
+                    instrument_name,
+                    image_url,
                     caption: image_object["caption"].as_str().map(|caption| caption.to_string()),
                     date,
                     sol: current_sol,
-                    title: image_object["title"].to_string(),
+                    title,
                     credit: image_object["credit"].as_str().map(|credit| credit.to_string())
                 };
 
