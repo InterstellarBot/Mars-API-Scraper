@@ -107,7 +107,7 @@ fn main() {
 
     // Create our request client 
     let request_client: Client = ClientBuilder::new()
-        .user_agent("Interstellar Mars Photo Scraper")
+        .user_agent(format!("InterstellarMarsPhotoScraper/{} (+https://github.com/InterstellarBot/Mars-API-Scraper)", env!("CARGO_PKG_VERSION")))
         .timeout(Duration::from_secs(120)) // NASA's API is fuckin slowwwwwwww
         .build()
         .expect("Failed to create HTTP Client");
