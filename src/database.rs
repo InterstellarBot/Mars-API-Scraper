@@ -57,6 +57,8 @@ impl Database {
             warn!("Detected {} rows without Camera ID's - Migrating, this may take a while...", rows_to_fix.len());
             let time: Instant = Instant::now();
 
+            self.start_transaction()?;
+
             for row in rows_to_fix {
                 // this is a pk, it should be here lol
                 let nasa_id: String = row.get(0).expect("can't find row's NASA ID... which is meant to be the primary key. what the fuck did you do?");
@@ -84,6 +86,8 @@ impl Database {
                     "nasa_id" => nasa_id
                 })?;
             }
+
+            self.end_transaction()?;
 
             info!("Migrated in {:?}", time.elapsed());
         }
@@ -159,6 +163,15 @@ impl Database {
             "camera_id" => camera_id,
         })?;
 
+        Ok(())
+    }
+
+    pub fn start_transaction(&mut self) -> Result<(), mysql::Error> {
+        self.connection.query_drop("START TRANSACTION;")?;
+        Ok(())
+    }
+    pub fn end_transaction(&mut self) -> Result<(), mysql::Error> {
+        self.connection.query_drop("COMMIT;")?;
         Ok(())
     }
 }
