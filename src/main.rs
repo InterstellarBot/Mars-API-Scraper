@@ -106,6 +106,8 @@ fn main() {
     info!("Checking/seeding tables as needed");
     db.check_tables().expect("Failed to check database tables");
     db.seed_tables().expect("Failed to seed database tables");
+    info!("Migrating tables if needed");
+    db.migrate_tables().expect("Failed to migrate database tables");
 
     // Create our request client 
     let request_client: Client = ClientBuilder::new()
