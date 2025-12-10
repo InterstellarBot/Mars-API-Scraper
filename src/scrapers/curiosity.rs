@@ -89,6 +89,11 @@ impl Scraper for CuriosityScraper {
                 None => continue
             };
             trace!("Got {} images", images.len());
+
+            if let Err(e) = db.start_transaction() {
+                return Err(format!("Failed to start db transaction {e}"));
+            }
+
             for image_value in images {
                 let image_object: &Map<String, Value> = match image_value.as_object() {
                     Some(r) => r,
@@ -160,6 +165,10 @@ impl Scraper for CuriosityScraper {
                 if let Err(e) = save_result {
                     error!("Failed to save image {nasa_id}: {e}");
                 }
+            }
+
+            if let Err(e) = db.end_transaction() {
+                return Err(format!("Failed to end db transaction {e}"));
             }
 
             if let Err(e) = db.update_sol_processed(&rover.id, current_sol) {
