@@ -44,6 +44,11 @@ impl Database {
             `credit` VARCHAR(1024)
         );")?;
 
+        // indexes
+        self.connection.query_drop("CREATE INDEX image_rover_id ON `rover_images`(`rover_id`)")?;
+        self.connection.query_drop("CREATE INDEX image_camera ON `rover_images`(`camera_id`)")?;
+        self.connection.query_drop("CREATE INDEX image_sol ON `rover_images`(`sol`)")?;
+
         Ok(())
     }
 
