@@ -1,7 +1,7 @@
 # Mars API Scraper
 Interstellar's scraper for NASA's Mars Rover Photos, based heavily off the work of [Chris Cerami's now archived API](https://github.com/corincerami/mars-photo-api).
 
-Note this is just the scraper - The actual web API code will be avaiable later... once it's actually written.
+Note this is just the scraper, [the actual web API code can be found here](https://github.com/InterstellarBot/Mars-API-Website).
 
 ## Running 
 The scraper uses environment variables for configuration just for ease of setting up. You can either use a .env file if your just looking to get it quickly working, or if you intend to run this as a scraper full-time you should make a systemd service that has these variables set or something. A list of all the variables you can set are in `.env.example`.
