@@ -1,11 +1,16 @@
-use std::{cmp::min, io::{self, Read}};
+use std::{
+    cmp::min,
+    io::{self, Read},
+};
 
 use chrono::{DateTime, Utc};
 use log::{debug, error, trace};
 use reqwest::blocking::Client;
 use serde_json::{Map, Value};
 
-use crate::{database::Database, scrapers::Scraper, Rover, RoverImage, ScraperConfig, CURIOSITY_ID};
+use crate::{
+    CURIOSITY_ID, Rover, RoverImage, ScraperConfig, database::Database, scrapers::Scraper,
+};
 
 const API_BASE_URL: &str = "https://mars.nasa.gov/api/v1/raw_image_items/";
 
@@ -17,30 +22,36 @@ impl Scraper for CuriosityScraper {
             Ok(r) => match r {
                 Some(r) => r,
                 None => return Err(String::from("Failed to find rover.")),
-            }
+            },
             Err(e) => return Err(e.to_string()),
         };
         trace!("Found rover for Curiosity");
 
         // find the latest sol
-        let mut latest_sol_request = match client.get(format!("{API_BASE_URL}?order=sol desc&condition_1=msl:mission&per_page=1")).send() {
+        let mut latest_sol_request = match client
+            .get(format!(
+                "{API_BASE_URL}?order=sol desc&condition_1=msl:mission&per_page=1"
+            ))
+            .send()
+        {
             Ok(r) => r,
-            Err(e) => return Err(e.to_string())
+            Err(e) => return Err(e.to_string()),
         };
         if !latest_sol_request.status().is_success() {
             return Err(String::from("Latest Sol image request failed."));
         }
         trace!("Made request for latest SOL image");
         let mut latest_sol_body: String = String::new();
-        let latest_sol_read_result: Result<usize, io::Error> = latest_sol_request.read_to_string(&mut latest_sol_body);
+        let latest_sol_read_result: Result<usize, io::Error> =
+            latest_sol_request.read_to_string(&mut latest_sol_body);
         if let Err(err) = latest_sol_read_result {
-            return Err(err.to_string())
+            return Err(err.to_string());
         }
         trace!("{latest_sol_body}");
         // parsing
         let latest_sol_body_parsed: Value = match serde_json::from_str(&latest_sol_body) {
             Ok(r) => r,
-            Err(e) => return Err(e.to_string())
+            Err(e) => return Err(e.to_string()),
         };
         let latest_sol: u64 = match latest_sol_body_parsed["items"][0]["sol"].as_u64() {
             Some(r) => r,
@@ -57,7 +68,10 @@ impl Scraper for CuriosityScraper {
         }
 
         let mut current_sol: u64 = last_processed;
-        let end: u64 = min(last_processed + (config.max_sols.unwrap() as u64), latest_sol);
+        let end: u64 = min(
+            last_processed + (config.max_sols.unwrap() as u64),
+            latest_sol,
+        );
         debug!("Processing from sol {current_sol} to sol {end}");
         while current_sol < end {
             current_sol += 1;
@@ -75,18 +89,18 @@ impl Scraper for CuriosityScraper {
             let mut body: String = String::new();
             let read_result: Result<usize, io::Error> = request.read_to_string(&mut body);
             if let Err(err) = read_result {
-                return Err(err.to_string())
+                return Err(err.to_string());
             }
             trace!("{body}");
 
             // parse it
             let body_parsed: Value = match serde_json::from_str(&body) {
                 Ok(r) => r,
-                Err(e) => return Err(e.to_string())
+                Err(e) => return Err(e.to_string()),
             };
             let images: &Vec<Value> = match body_parsed["items"].as_array() {
                 Some(r) => r,
-                None => continue
+                None => continue,
             };
             trace!("Got {} images", images.len());
 
@@ -97,7 +111,7 @@ impl Scraper for CuriosityScraper {
             for image_value in images {
                 let image_object: &Map<String, Value> = match image_value.as_object() {
                     Some(r) => r,
-                    None => continue
+                    None => continue,
                 };
 
                 let nasa_id: String = match image_object["id"].as_u64() {
@@ -114,50 +128,63 @@ impl Scraper for CuriosityScraper {
                         error!("Failed to take date for {}", &nasa_id);
                         error!("Skipping Image...");
                         continue;
-                    },
+                    }
                 };
                 // this stupid dumb function needs a timezone :/
-                let date: DateTime<Utc> = match DateTime::parse_from_str(&format!("{date_to_parse} +00:00"), "%Y-%m-%dT%H:%M:%S%.3fZ %z") {
+                let date: DateTime<Utc> = match DateTime::parse_from_str(
+                    &format!("{date_to_parse} +00:00"),
+                    "%Y-%m-%dT%H:%M:%S%.3fZ %z",
+                ) {
                     Ok(r) => r.to_utc(),
                     Err(e) => {
-                        error!("Failed to parse date for {} ({date_to_parse}) -> {e}", &nasa_id);
+                        error!(
+                            "Failed to parse date for {} ({date_to_parse}) -> {e}",
+                            &nasa_id
+                        );
                         error!("Skipping Image...");
                         continue;
-                    },
+                    }
                 };
 
                 let instrument_name: String = match image_object["instrument"].as_str() {
                     Some(r) => r.to_string(),
                     None => {
-                        error!("Image {} is missing camera instrument name - Skipping!", &nasa_id);
+                        error!(
+                            "Image {} is missing camera instrument name - Skipping!",
+                            &nasa_id
+                        );
                         continue;
-                    },
+                    }
                 };
                 let image_url: String = match image_object["url"].as_str() {
                     Some(r) => r.to_string(),
                     None => {
                         error!("Image {} is missing image file url - Skipping!", &nasa_id);
                         continue;
-                    },
+                    }
                 };
                 let title: String = match image_object["title"].as_str() {
                     Some(r) => r.to_string(),
                     None => {
                         error!("Image {} is missing a title - Skipping!", &nasa_id);
                         continue;
-                    },
+                    }
                 };
 
-                let image: RoverImage = RoverImage { 
+                let image: RoverImage = RoverImage {
                     nasa_id: nasa_id.clone(),
                     rover_id: rover.id.to_string(),
                     instrument_name,
                     image_url,
-                    caption: image_object["description"].as_str().map(|caption| caption.to_string()),
+                    caption: image_object["description"]
+                        .as_str()
+                        .map(|caption| caption.to_string()),
                     date,
                     sol: current_sol,
                     title,
-                    credit: image_object["image_credit"].as_str().map(|credit| credit.to_string())
+                    credit: image_object["image_credit"]
+                        .as_str()
+                        .map(|credit| credit.to_string()),
                 };
 
                 let save_result: Result<(), mysql::Error> = db.save_image(image);

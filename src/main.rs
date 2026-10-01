@@ -9,7 +9,10 @@ use reqwest::blocking::{Client, ClientBuilder};
 use serde::Deserialize;
 use simplelog::{ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode};
 
-use crate::{database::Database, scrapers::{curiosity::CuriosityScraper, perseverance::PerseveranceScraper, Scraper}};
+use crate::{
+    database::Database,
+    scrapers::{Scraper, curiosity::CuriosityScraper, perseverance::PerseveranceScraper},
+};
 
 mod database;
 mod scrapers;
@@ -23,7 +26,7 @@ struct ScraperConfig {
     db_schema: String,
 
     log_level: Option<String>,
-    max_sols: Option<u32>
+    max_sols: Option<u32>,
 }
 
 // Rover ID constants, used as the db pk's
@@ -36,14 +39,20 @@ const CURIOSITY_ID: &str = "curiosity";
 pub struct Rover {
     id: String,
     name: String,
-    last_sol_processed: u64
+    last_sol_processed: u64,
 }
 impl Rover {
     fn from_row(row: &mut Row) -> Self {
         Self {
-            id: row.take(0).expect("Failed to take column, have you updated the schema but not the code?"),
-            name: row.take(1).expect("Failed to take column, have you updated the schema but not the code?"),
-            last_sol_processed: row.take(2).expect("Failed to take column, have you updated the schema but not the code?"),
+            id: row
+                .take(0)
+                .expect("Failed to take column, have you updated the schema but not the code?"),
+            name: row
+                .take(1)
+                .expect("Failed to take column, have you updated the schema but not the code?"),
+            last_sol_processed: row
+                .take(2)
+                .expect("Failed to take column, have you updated the schema but not the code?"),
         }
     }
 }
@@ -53,7 +62,7 @@ impl Rover {
 pub struct RoverCamera {
     instrument_name: String,
     name: String,
-    rover_id: String
+    rover_id: String,
 }
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -70,7 +79,7 @@ pub struct RoverImage {
 }
 
 fn main() {
-    // Load settings 
+    // Load settings
     dotenv().ok();
     let mut config: ScraperConfig = Config::builder()
         .add_source(config::Environment::with_prefix("SCRAPER"))
@@ -92,13 +101,17 @@ fn main() {
         "info" => LevelFilter::Info,
         "debug" => LevelFilter::Debug,
         "trace" => LevelFilter::Trace,
-        _ => LevelFilter::Info
+        _ => LevelFilter::Info,
     };
 
-    // Logging 
-    CombinedLogger::init(vec![
-        TermLogger::new(filter, simplelog::Config::default(), TerminalMode::Mixed, ColorChoice::Auto)
-    ]).expect("Failed to create logger.");
+    // Logging
+    CombinedLogger::init(vec![TermLogger::new(
+        filter,
+        simplelog::Config::default(),
+        TerminalMode::Mixed,
+        ColorChoice::Auto,
+    )])
+    .expect("Failed to create logger.");
 
     // Connect to our DB
     info!("Connecting to the database...");
@@ -107,28 +120,35 @@ fn main() {
     db.check_tables().expect("Failed to check database tables");
     db.seed_tables().expect("Failed to seed database tables");
     info!("Migrating tables if needed");
-    db.migrate_tables().expect("Failed to migrate database tables");
+    db.migrate_tables()
+        .expect("Failed to migrate database tables");
 
-    // Create our request client 
+    // Create our request client
     let request_client: Client = ClientBuilder::new()
         .user_agent(format!("InterstellarMarsPhotoScraper/{} (+https://github.com/InterstellarBot/Mars-API-Scraper)", env!("CARGO_PKG_VERSION")))
-        .timeout(Duration::from_secs(120)) // NASA's API is fuckin slowwwwwwww
+        .timeout(Duration::from_secs(120)) // NASA's API is slowwwwwwww
         .build()
         .expect("Failed to create HTTP Client");
 
-    // Scraping time 
+    // Scraping time
 
     let curiosity_time: Instant = Instant::now();
     info!("Running Curiosity Scraper...");
     if let Err(e) = CuriosityScraper::scrape(&mut db, &request_client, &config) {
         error!("Curiosity Scraper failed to scrape: {e}");
     }
-    info!("Curiosity Scraper finished in {:?}", curiosity_time.elapsed());
+    info!(
+        "Curiosity Scraper finished in {:?}",
+        curiosity_time.elapsed()
+    );
 
     let perseverance_time: Instant = Instant::now();
     info!("Running Perseverance Scraper...");
     if let Err(e) = PerseveranceScraper::scrape(&mut db, &request_client, &config) {
         error!("Perseverance Scraper failed to scrape: {e}");
     }
-    info!("Perseverance Scraper finished in {:?}", perseverance_time.elapsed());
+    info!(
+        "Perseverance Scraper finished in {:?}",
+        perseverance_time.elapsed()
+    );
 }
