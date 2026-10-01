@@ -30,7 +30,7 @@ impl Database {
         )",
         )?;
         // Camera ID is just "{rover_id}-{instrument_name}"
-        // It's to keep our website's eloquent happy - It used to just be a compound between the two
+        // It's to keep our website's eloquent orm happy - It used to just be a compound between the two
         self.connection.query_drop(
             r"CREATE TABLE IF NOT EXISTS `rover_cameras`(
             `camera_id` VARCHAR(255) NOT NULL PRIMARY KEY,
